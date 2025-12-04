@@ -5,6 +5,7 @@ import { XR, createXRStore, IfInSessionMode } from '@react-three/xr'
 import { OrbitControls, Environment, Gltf } from '@react-three/drei'
 import { Root, Container, Text } from '@react-three/uikit'
 import { Suspense } from 'react'
+import { TimerCard } from './CountDownTimer'
 
 const store = createXRStore()
 
@@ -32,7 +33,7 @@ export function XRScene() {
           <directionalLight position={[10, 10, 5]} intensity={1} />
           
           <Suspense fallback={null}>
-            <Gltf src="/models/stage.glb" position={[0, -1, 4]} scale={1} rotation={[0, Math.PI, 0]}/>
+            <Gltf src="/../../models/stage.glb" position={[0, -1, 4]} scale={1} rotation={[0, Math.PI, 0]}/>
           </Suspense>
 
           <group position={[0, 1.5, -2]}>
@@ -106,6 +107,14 @@ export function XRScene() {
               </Container>
             </Root>
           </group>
+
+          {/* timer com input de tempo de minutos e segundos */}
+
+          <group position={[4, 1.5, -2]}>  
+    <Root pixelSize={0.005}>
+      <TimerCard />
+    </Root>
+  </group>
 
           <IfInSessionMode deny={['immersive-ar', 'immersive-vr']}>
             <OrbitControls />

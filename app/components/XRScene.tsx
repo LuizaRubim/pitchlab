@@ -1,7 +1,7 @@
 'use client'
 
 import { Canvas } from '@react-three/fiber'
-import { XR, createXRStore, IfInSessionMode } from '@react-three/xr'
+import { XR, createXRStore, IfInSessionMode, XROrigin } from '@react-three/xr'
 import { OrbitControls, Environment, Gltf } from '@react-three/drei'
 import { Root, Container, Text } from '@react-three/uikit'
 import { Suspense, useState } from 'react'
@@ -53,7 +53,7 @@ export function XRScene() {
               <Gltf src="/models/stage.glb" position={[4, -2, 5]} scale={1} rotation={[0, Math.PI, 0]}/>
             )}
             {mode === 'elevator' && (
-              <Gltf src="/models/elevator.glb" position={[0, -1, 4]} scale={1} rotation={[0, Math.PI/1.2, 0]}/>
+              <Gltf src="/models/elevator.glb" position={[0, -1, -2]} scale={1} rotation={[0, Math.PI, 0]}/>
             )}
           </Suspense>
 
@@ -204,6 +204,10 @@ export function XRScene() {
                 </Container>
               )}
             </Root>
+          </group>
+
+          <group position={[0, -1, 0]}>
+            <XROrigin position-z={2.5} />
           </group>
 
           <IfInSessionMode deny={['immersive-ar', 'immersive-vr']}>

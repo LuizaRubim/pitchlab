@@ -2,10 +2,6 @@
 
 import { useState } from "react";
 import { Upload } from "lucide-react";
-import { Label } from "react-aria-components";
-
-import { DateInput, TimeField } from "@/components/ui/datefield-rac";
-
 
 export default function Home() {
   const [scenario, setScenario] = useState<"elevator" | "auditorium" | "">("");
@@ -14,7 +10,10 @@ export default function Home() {
   const [pptFile, setPptFile] = useState<File | null>(null);
   const [difficulty, setDifficulty] = useState("easy");
   const [timerValue, setTimerValue] = useState(0);
-  const [timerText, setTimerText] = useState("00:00");
+
+  // 🌟 Novo: estados do popup
+  const [showPopup, setShowPopup] = useState(false);
+  const [sessionCode, setSessionCode] = useState("");
 
   const handleBulletChange = (i: number, value: string) => {
     const updated = [...bulletPoints];
@@ -22,29 +21,11 @@ export default function Home() {
     setBulletPoints(updated);
   };
 
-  const handleTimerChange = (raw: string) => {
-    const digits = raw.replace(/\D/g, "");
-
-    let mm = digits.slice(0, 2);
-    let ss = digits.slice(2, 4);
-
-    if (mm.length === 0) mm = "00";
-    if (mm.length === 1) mm = "0" + mm;
-
-    if (!ss) ss = "00";
-    if (ss.length === 1) ss = "0" + ss;
-
-    // limitar segundos no máximo até 59
-    if (Number(ss) > 59) ss = "59";
-
-    const formatted = `${mm}:${ss}`;
-    setTimerText(formatted);
-
-    setTimerValue(Number(mm) * 60 + Number(ss));
-  };
-
   const handleButtonClick = () => {
-    // faz console log dos dados coletados e exibe um card com "Simulação Iniciada! e um código aleatório
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setSessionCode(code);
+    setShowPopup(true);
+
     console.log({
       scenario,
       bulletPoints: scenario === "elevator" ? bulletPoints : undefined,
@@ -53,8 +34,14 @@ export default function Home() {
       timer: hasTimer ? timerValue : undefined,
     });
 
-    alert("Simulação Iniciada! Código: " + Math.random().toString(36).substring(2, 8).toUpperCase());
-  }
+    // resetar campos
+    setScenario("");
+    setBulletPoints(["", "", "", "", ""]);
+    setPptFile(null);
+    setDifficulty("easy");
+    setHasTimer(false);
+    setTimerValue(0);
+  };
 
   return (
     <div className="relative min-h-screen bg-cover bg-center bg-no-repeat"
@@ -62,7 +49,7 @@ export default function Home() {
         backgroundImage: "url('/presentation.jpg')"
       }}>
 
-      {/* Overlay escuro para contraste */}
+      {/* Overlay escuro */}
       <div className="absolute inset-0 bg-black/60" />
 
       {/* Card principal */}
@@ -80,15 +67,15 @@ export default function Home() {
             <select
               value={scenario}
               onChange={(e) => setScenario(e.target.value as any)}
-              className="w-full border border-white/30 p-3 rounded-xl"
+              className="w-full border border-white/30 p-3 rounded-xl bg-black/30"
             >
-              <option className="bg-black/80 text-white"value="">Selecione um cenário</option>
-              <option className="bg-black/80 text-white" value="elevator">Elevador</option>
-              <option className="bg-black/80 text-white" value="auditorium">Auditório</option>
+              <option className="bg-black" value="">Selecione um cenário</option>
+              <option className="bg-black" value="elevator">Elevador</option>
+              <option className="bg-black" value="auditorium">Auditório</option>
             </select>
           </div>
 
-          {/* INPUTS DEPENDENTES DO CENÁRIO */}
+          {/* INPUTS DEPENDENTES */}
           {scenario === "elevator" && (
             <div className="mb-6 animate-fadeIn">
               <h2 className="font-semibold mb-3">Elevator Pitch — Seus 5 bullet points</h2>
@@ -99,7 +86,7 @@ export default function Home() {
                   placeholder={`Bullet point ${i + 1}`}
                   value={bp}
                   onChange={(e) => handleBulletChange(i, e.target.value)}
-                  className="w-full bg-white/10 border border-white/20 p-3 rounded-xl mb-2"
+                  className="w-full bg-white/10 border border-white/20 p-3 rounded-xl mb-2 text-white"
                 />
               ))}
             </div>
@@ -107,14 +94,14 @@ export default function Home() {
 
           {scenario === "auditorium" && (
             <div className="mb-6 animate-fadeIn">
-              <h2 className="font-semibold mb-3">Upload da apresentação (.pptx)</h2>
+              <h2 className="font-semibold mb-3">Upload da apresentação (.pptx, .pdf)</h2>
 
               <label className="flex items-center gap-3 bg-white/10 hover:bg-white/20 transition p-4 rounded-xl cursor-pointer border border-white/20">
                 <Upload />
                 <span>{pptFile ? pptFile.name : "Escolher arquivo"}</span>
                 <input
                   type="file"
-                  accept=".pptx"
+                  accept=".pptx,.pdf"
                   className="hidden"
                   onChange={(e) => setPptFile(e.target.files?.[0] || null)}
                 />
@@ -128,11 +115,11 @@ export default function Home() {
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
-              className="w-full border border-white/30 p-3 rounded-xl"
+              className="w-full border border-white/30 p-3 rounded-xl bg-black/30"
             >
-              <option className="bg-black/80 text-white" value="easy">Fácil</option>
-              <option className="bg-black/80 text-white" value="medium">Médio</option>
-              <option className="bg-black/80 text-white" value="hard">Difícil</option>
+              <option className="bg-black" value="easy">Fácil</option>
+              <option className="bg-black" value="medium">Médio</option>
+              <option className="bg-black" value="hard">Difícil</option>
             </select>
           </div>
 
@@ -152,23 +139,63 @@ export default function Home() {
               ></div>
             </div>
 
+            {/* Botões de tempo */}
             {hasTimer && (
-              <TimeField className="*:not-first:mt-2"
-              >
-                <DateInput
-                className="w-full text-white bg-white/10 border border-white/20 p-3 rounded-xl " 
-                />
-              </TimeField>
+              <div className="mt-4 flex gap-3 flex-wrap">
+                {[1, 2, 5, 10].map((min) => {
+                  const isSelected = timerValue === min * 60;
+
+                  return (
+                    <button
+                      key={min}
+                      onClick={() => setTimerValue(min * 60)}
+                      className={`
+                        px-4 py-2 rounded-xl border transition font-semibold
+                        ${isSelected
+                          ? "bg-blue-600 border-blue-400 text-white"
+                          : "bg-white/10 border-white/20 text-gray-200 hover:bg-white/20"}
+                      `}
+                    >
+                      {min} min
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-
-          <button className="mt-6 w-full bg-blue-600 hover:bg-blue-700 transition p-4 rounded-xl font-bold text-center"
-          onClick={handleButtonClick}>
+          {/* BOTÃO PRINCIPAL */}
+          <button
+            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 transition p-4 rounded-xl font-bold text-center"
+            onClick={handleButtonClick}
+          >
             Iniciar Simulação
           </button>
         </div>
       </div>
+
+      {/* 🌟 POPUP MODAL PERSONALIZADO */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[9999]">
+          <div className="bg-white/20 border border-white/30 p-8 rounded-3xl text-center shadow-2xl animate-fadeIn">
+            
+            <h2 className="text-2xl font-bold mb-3 text-white">Simulação Iniciada!</h2>
+            <p className="mb-4 text-lg text-gray-200">Use este código para se conectar:</p>
+
+            <div className="text-4xl font-mono font-bold bg-black/30 p-4 rounded-xl mb-6 tracking-widest text-white">
+              {sessionCode}
+            </div>
+
+            <button
+              onClick={() => setShowPopup(false)}
+              className="w-full bg-blue-600 hover:bg-blue-700 transition p-3 rounded-xl font-semibold"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

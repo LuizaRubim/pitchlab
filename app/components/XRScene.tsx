@@ -53,7 +53,7 @@ export function XRScene() {
               <Gltf src="/models/stage.glb" position={[4, -2, 5]} scale={1} rotation={[0, Math.PI, 0]}/>
             )}
             {mode === 'elevator' && (
-              <Gltf src="/models/elevator.glb" position={[0, -1, -2]} scale={1} rotation={[0, Math.PI, 0]}/>
+              <Gltf src="/models/elevator.glb" position={[0, -1, 5]} scale={1} rotation={[0, Math.PI/(-2.02), 0]}/>
             )}
           </Suspense>
 

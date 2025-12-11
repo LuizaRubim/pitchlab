@@ -64,9 +64,7 @@ export function XRScene() {
                   flexDirection="column" 
                   alignItems="center" 
                   justifyContent="center"
-                  backgroundColor="#000000"
-                  // @ts-ignore
-                  backgroundOpacity={0.8}
+                  backgroundColor="rgba(0,0,0,0.8)"
                   borderRadius={32}
                   padding={48}
                   width={800}

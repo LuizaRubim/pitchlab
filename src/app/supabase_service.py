@@ -33,7 +33,7 @@ class SupabaseService:
         storage.upload(
             storage_path,
             data,
-            {"content-type": "application/pdf", "upsert": True},
+            {"content-type": "application/pdf", "upsert": "true"},
         )
         return storage.get_public_url(storage_path)
 

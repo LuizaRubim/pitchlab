@@ -1,0 +1,2 @@
+"""FastAPI pitch backend package."""
+

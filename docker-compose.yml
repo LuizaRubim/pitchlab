@@ -1,26 +1,15 @@
 version: "3.9"
 
 services:
-  nextjs:
+  web:
     build: .
-    container_name: nextjs_app
     ports:
-      - "3000:3000"
-    expose:
-      - "3000"
-
-  caddy:
-    image: caddy:latest
-    container_name: caddy_server
-    ports:
-      - "8080:80"
-      - "4430:443"
+      - "3000:443" # Mapeia a porta 3000 do host para a 80 do Caddy
+    restart: always
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      # Opcional: Persistir dados ou configs do Caddy se necessário
       - caddy_data:/data
       - caddy_config:/config
-    depends_on:
-      - nextjs
 
 volumes:
   caddy_data:

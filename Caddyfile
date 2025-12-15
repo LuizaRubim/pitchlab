@@ -1,7 +1,12 @@
-{
-    auto_https disable_redirects
+:80 {
+    root * /usr/share/caddy
+    file_server
 }
 
-https://pitchlab.localhost {
-    reverse_proxy nextjs:3000
-} 
+:443 {
+    root * /usr/share/caddy
+    file_server
+    tls internal {
+        on_demand
+    }
+}

@@ -1,5 +1,5 @@
 # -------- BUILDER --------
-FROM node:22 AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -10,11 +10,15 @@ COPY . .
 RUN npm run build
 
 # -------- RUNTIME --------
-FROM node:22 AS runner
-WORKDIR /app
+# --- Etapa 2: Runner (Caddy) ---
+FROM caddy:2-alpine
 
-ENV NODE_ENV=production
-COPY --from=builder /app ./
+# Copia o Caddyfile configurado
+COPY Caddyfile /etc/caddy/Caddyfile
 
-EXPOSE 3000
-CMD ["npm", "start"]
+# Copia APENAS os arquivos estáticos gerados no build anterior para a pasta do Caddy
+COPY --from=builder /app/out /usr/share/caddy
+
+# Expõe a porta 80
+EXPOSE 80
+EXPOSE 443

@@ -1,5 +1,5 @@
-import { Container, Text } from '@react-three/uikit'
-import { Pause, Play, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Container, Text, Image } from '@react-three/uikit'
+import { Suspense, useRef } from 'react'  
 
 interface TeleprompterProps {
   timer: string
@@ -9,14 +9,15 @@ interface TeleprompterProps {
   onTogglePause: () => void
   onNext: () => void
   onPrev: () => void
+  currentSlideUrl?: string | null
 }
 
 export function TeleprompterView({ 
-    timer, isPaused, slideNumber, totalSlides, onTogglePause, onNext, onPrev 
+    timer, isPaused, slideNumber, totalSlides, onTogglePause, onNext, onPrev, currentSlideUrl
 }: TeleprompterProps) {
   
-  const isUrgent = parseInt(timer.split(':')[0]) === 0 && parseInt(timer.split(':')[1]) < 30 // < 30seg
-
+  const isUrgent = parseInt(timer.split(':')[0]) === 0 && parseInt(timer.split(':')[1]) < 30
+  
   return (
     <Container 
       width={600} height={300} 
@@ -28,42 +29,103 @@ export function TeleprompterView({
       borderColor="#333"
       transformRotateX={0.3}
     >
-      {/* Timer Grande */}
-      <Container flexGrow={1} alignItems="center" justifyContent="center">
-         <Text 
-            fontSize={96} 
-            color={isUrgent ? "#ef4444" : "white"} 
-            fontWeight="bold"
-         >
-            {timer}
-         </Text>
-      </Container>
+      <Container 
+        flexDirection="row" // Lado a lado
+        alignItems="center" 
+        justifyContent="space-between" // Espalha eles
+        width="100%"
+        height={100} // Altura fixa para reservar espaço
+      >
+        
+        {/* Lado Esquerdo: TIMER */}
+        <Container flexDirection="column" alignItems="center">
+            <Text fontSize={40} color="white">
+                {timer}
+            </Text>
+            <Text fontSize={14} color="#aaa">Tempo Restante</Text>
+        </Container>
 
-      {/* Info Slide */}
-      <Text fontSize={20} color="#888" textAlign="center" marginBottom={10}>
-         Slide {slideNumber} / {totalSlides}
-      </Text>
+        <Container flexDirection="column" alignItems="center">
+            <Text fontSize={24} color="#3b82f6" fontWeight="bold">
+                {slideNumber} / {totalSlides}
+            </Text>
+            <Text fontSize={12} color="#888">Slide</Text>
+        </Container>
+
+        {/* Lado Direito: MINIATURA DO SLIDE */}
+        <Container 
+            width={120} 
+            height={80} 
+            backgroundColor="#333" 
+            borderRadius={5}
+            overflow="hidden" // Garante que a imagem respeite a borda arredondada
+            alignItems="center"
+            justifyContent="center"
+        >
+          {currentSlideUrl ? (
+             // Suspense evita que pisque ou quebre enquanto carrega
+             <Suspense fallback={<Text fontSize={10} color="gray">...</Text>}>
+                <Image 
+                    src={currentSlideUrl} 
+                    width="100%" 
+                    height="100%" 
+                    objectFit="cover" // Ajusta a imagem sem esticar (como CSS)
+                    pointerEvents="none" // Importante: evita bloquear raios se passar a mão
+                />
+             </Suspense>
+          ) : (
+             <Text fontSize={12} color="gray">Sem Slide</Text>
+          )}
+        </Container>
+
+      </Container>
 
       {/* Controles */}
       <Container flexDirection="row" justifyContent="space-between" alignItems="center">
-          <Container onClick={onPrev} backgroundColor="#333" padding={15} borderRadius={10} cursor="pointer">
-            <Text color="white">{'<'}{'< '}Anterior</Text>
+          <Container 
+          onClick={onPrev}
+            onPointerDown={
+                  (e) => {
+              e.stopPropagation()
+              onPrev()
+            }}
+          backgroundColor="#333" padding={15} borderRadius={10} cursor="pointer">
+            <Text color="white"
+            pointerEvents="none"
+            >{'<'}{'< '}Anterior</Text>
           </Container>
 
           <Container 
-            onClick={onTogglePause} 
+            onClick={onTogglePause}
+            onPointerDown={
+              (e) => {
+              e.stopPropagation()
+              onTogglePause()
+            }
+            }
             backgroundColor={isPaused ? "#22c55e" : "#eab308"} 
             paddingX={40} paddingY={15} 
             borderRadius={10} 
             cursor="pointer"
           >
-             <Text color="white" fontWeight="bold">
+             <Text color="white" fontWeight="bold"
+             pointerEvents="none">
                 {isPaused ? "CONTINUAR" : "PAUSAR"}
              </Text>
           </Container>
 
-          <Container onClick={onNext} backgroundColor="#3b82f6" padding={15} borderRadius={10} cursor="pointer">
-             <Text color="white">Próximo {' >'}{'>'}</Text>
+          <Container 
+          onClick={onNext}
+          onPointerDown={
+              (e) => {
+              e.stopPropagation()
+              onNext()
+            }
+            }
+          backgroundColor="#3b82f6" padding={15} borderRadius={10} cursor="pointer">
+             <Text color="white"
+             pointerEvents="none"
+             >Próximo {' >'}{'>'}</Text>
           </Container>
       </Container>
     </Container>

@@ -12,7 +12,8 @@ import { IntroView } from './IntroView'
 import { KeypadView } from './KeypadView'
 import { VRControlListener } from './presentation/VrControl'
 
-const store = createXRStore()
+const store = createXRStore({
+})
 export function XRScene() {
   const { state, actions, helpers } = usePresentation()  
 
@@ -42,6 +43,12 @@ export function XRScene() {
         <XR store={store}>
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
+
+          <VRControlListener 
+            isEnabled={state.mode === 'presentation'} 
+            onNext={actions.nextSlide}
+            onPrev={actions.prevSlide}
+          />
           
           <Suspense fallback={null}>
             {/* --- CENÁRIO DE FUNDO (ATRÁS) ---
@@ -60,17 +67,12 @@ export function XRScene() {
               <Gltf src="/models/elevator.glb" position={[0, -1.5, 2.7]} scale={1} rotation={[0, Math.PI/2, 0]}/>
             )*/}
           </Suspense>
-          <VRControlListener 
-            isEnabled={state.mode === 'presentation'} 
-            onNext={actions.nextSlide}
-            onPrev={actions.prevSlide}
-          />
 
           {/* --- UI DA FRENTE (Menus Iniciais) ---
           */}
           {(state.mode === 'intro' || state.mode === 'code') && (
-             <group position={[0, 1.0, -1]}>
-                <Root pixelSize={0.005}>
+             <group position={[0, -1, -1.5]}>
+                <Root pixelSize={0.002}>
                    {state.mode === 'intro' && <IntroView onStart={() => actions.setMode('code')} />}
                    {state.mode === 'code' && (
                      <KeypadView 
@@ -103,7 +105,7 @@ export function XRScene() {
                    Posição: Z = -1.5 (Chão, na sua frente)
                    Rotação X = -0.6 (Inclinado para cima para você ler sem baixar muito a cabeça)
                 */}
-                <group position={[0, -1, -1.5]} rotation={[-0.6, 0, 0]}>
+                <group position={[0, -1, -1.5]} rotation={[0, 0, 0]} >
                     <Root pixelSize={0.002}>
                         <TeleprompterView 
                             timer={helpers.formatTime(state.timeLeft)}
@@ -113,6 +115,7 @@ export function XRScene() {
                             onTogglePause={actions.togglePause}
                             onNext={actions.nextSlide}
                             onPrev={actions.prevSlide}
+                            currentSlideUrl={state.slides[state.currentSlideIndex]}
                         />
                     </Root>
                 </group>

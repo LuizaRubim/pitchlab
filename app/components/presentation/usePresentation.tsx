@@ -1,4 +1,3 @@
-// src/components/presentation/usePresentation.ts
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { AppMode } from './types'

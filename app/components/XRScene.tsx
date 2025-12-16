@@ -1,46 +1,41 @@
 'use client'
-
 import { Canvas } from '@react-three/fiber'
-import { XR, createXRStore, IfInSessionMode, XROrigin } from '@react-three/xr'
-import { OrbitControls, Environment, Gltf } from '@react-three/drei'
-import { Root, Container, Text } from '@react-three/uikit'
-import { Suspense, useState } from 'react'
+import { XR, createXRStore, XROrigin, IfInSessionMode } from '@react-three/xr'
+import { OrbitControls, Gltf, Environment } from '@react-three/drei'
+import { Root } from '@react-three/uikit'
+import { Suspense } from 'react'
+
+import { usePresentation } from './presentation/usePresentation'
+import { ProjectionScreen } from './presentation/projectionScreen'
+import { TeleprompterView } from './SlideView'
+import { IntroView } from './IntroView'
+import { KeypadView } from './KeypadView'
+import { VRControlListener } from './presentation/VrControl'
 
 const store = createXRStore()
-
 export function XRScene() {
-  const [mode, setMode] = useState<'intro' | 'code' | 'elevator'>('intro')
-  const [code, setCode] = useState('')
-
-  const handleDigit = (digit: string) => {
-    if (code.length < 4) setCode((prev) => prev + digit)
-  }
-
-  const handleBackspace = () => {
-    setCode((prev) => prev.slice(0, -1))
-  }
-
-  const handleSubmit = () => {
-    if (code.length > 0) {
-      setMode('elevator')
-    }
-  }
+  const { state, actions, helpers } = usePresentation()  
 
   return (
     <>
-      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1000, display: 'flex', gap: '10px' }}>
-        <button 
-          onClick={() => store.enterAR()}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-        >
-          Enter AR
-        </button>
-        <button 
-          onClick={() => store.enterVR()}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-        >
-          Enter VR
-        </button>
+      {/* --- UI HTML 2D (Controles Externos) --- */}
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '10px', color: 'white', fontFamily: 'sans-serif' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => store.enterAR()} style={{ padding: '8px 16px' }}>Enter AR</button>
+            <button onClick={() => store.enterVR()} style={{ padding: '8px 16px' }}>Enter VR</button>
+        </div>
+        
+        <div style={{ background: 'rgba(0,0,0,0.8)', padding: '15px', borderRadius: '8px', width: '250px' }}>
+            <p style={{margin: '0 0 5px 0', fontSize: '0.9em', color: '#ccc'}}>Configuração:</p>
+            <input type="file" accept="application/pdf" onChange={actions.handleFileUpload} style={{ width: '100%', marginBottom: '10px' }} />
+            <button 
+                onClick={actions.startPresentation}
+                disabled={state.slides.length === 0}
+                style={{ width: '100%', padding: '8px', background: state.slides.length > 0 ? '#3b82f6' : '#555', color: 'white', border: 'none', cursor: 'pointer' }}
+            >
+                {state.slides.length > 0 ? 'INICIAR APRESENTAÇÃO' : 'Carregue um PDF'}
+            </button>
+        </div>
       </div>
       
       <Canvas style={{ height: '100vh', background: '#111' }}>
@@ -49,163 +44,84 @@ export function XRScene() {
           <directionalLight position={[10, 10, 5]} intensity={1} />
           
           <Suspense fallback={null}>
-            {mode !== 'elevator' && (
-              <Gltf src="/models/stage.glb" position={[4, -2, 5]} scale={1} rotation={[0, Math.PI, 0]}/>
+            {/* --- CENÁRIO DE FUNDO (ATRÁS) ---
+            */}
+            {state.mode !== 'elevator' && (
+              <Gltf 
+                  src="/models/stage.glb" 
+                  position={[4, -2, 5]} 
+                  scale={1} 
+                  rotation={[0, Math.PI, 0]}
+              />
             )}
-            {mode === 'elevator' && (
+            
+            {/* Elevador (Se necessário) */}
+            {/*state.mode === 'elevator' && (
               <Gltf src="/models/elevator.glb" position={[0, -1.5, 2.7]} scale={1} rotation={[0, Math.PI/2, 0]}/>
-            )}
+            )*/}
           </Suspense>
+          <VRControlListener 
+            isEnabled={state.mode === 'presentation'} 
+            onNext={actions.nextSlide}
+            onPrev={actions.prevSlide}
+          />
 
-          <group position={[0, 1.0, -1]}>
-            <Root pixelSize={0.005}>
-              {mode === 'intro' && (
-                <Container 
-                  flexDirection="column" 
-                  alignItems="center" 
-                  justifyContent="center"
-                  backgroundColor="rgba(0,0,0,0.8)"
-                  borderRadius={32}
-                  padding={48}
-                  width={800}
-                >
-                  <Text fontSize={64} color="#ffffff" fontWeight="bold" marginBottom={24}>
-                    PitchLab
-                  </Text>
-                  
-                  <Container width="100%" height={4} backgroundColor="#3b82f6" borderRadius={2} marginBottom={32} />
+          {/* --- UI DA FRENTE (Menus Iniciais) ---
+          */}
+          {(state.mode === 'intro' || state.mode === 'code') && (
+             <group position={[0, 1.0, -1]}>
+                <Root pixelSize={0.005}>
+                   {state.mode === 'intro' && <IntroView onStart={() => actions.setMode('code')} />}
+                   {state.mode === 'code' && (
+                     <KeypadView 
+                       code={state.code}
+                       onDigit={actions.handleDigit}
+                       onDelete={actions.handleBackspace}
+                       onSubmit={actions.startPresentation}
+                     />
+                   )}
+                </Root>
+             </group>
+          )}
 
-                  <Text fontSize={32} color="#cccccc" textAlign="center" lineHeight={1.5}>
-                    Welcome to the future of immersive presentations.
-                  </Text>
+          {/* --- MODO APRESENTAÇÃO --- 
+          */}
+          {state.mode === 'presentation' && (
+            <>
+                {/* 1. TELÃO (ATRÁS DE VOCÊ)
+                   Posição: Z = 4 (Fica no fundo, perto do palco)
+                   Rotação Y = Math.PI (180 graus) para "olhar" para o Z Negativo (onde você está)
+                   Assim, se você virar para trás, verá o slide.
+                */}
+                <group position={[2, 2, 14]} rotation={[0, Math.PI, 0]}> 
+                    <Root pixelSize={0.008} sizeX={16} sizeY={9}>
+                        <ProjectionScreen src={helpers.currentSlideUrl} />
+                    </Root>
+                </group>
 
-                  <Container marginTop={48} flexDirection="row" gap={24}>
-                    <Container
-                      backgroundColor="#3b82f6"
-                      paddingX={32}
-                      paddingY={16}
-                      borderRadius={12}
-                      hover={{ backgroundColor: "#2563eb" }}
-                      cursor="pointer"
-                      onClick={() => store.enterVR()}
-                    >
-                      <Text color="white" fontSize={24} fontWeight="medium">Iniciar VR</Text>
-                    </Container>
-                    
-                    <Container
-                      backgroundColor="#ffffff"
-                      paddingX={32}
-                      paddingY={16}
-                      borderRadius={12}
-                      hover={{ backgroundColor: "#f3f4f6" }}
-                      cursor="pointer"
-                      onClick={() => setMode('code')}
-                    >
-                      <Text color="black" fontSize={24} fontWeight="medium">Inserir Código</Text>
-                    </Container>
-                  </Container>
-                </Container>
-              )}
+                {/* 2. MONITOR DE RETORNO / TELEPROMPTER (NA SUA FRENTE)
+                   Posição: Z = -1.5 (Chão, na sua frente)
+                   Rotação X = -0.6 (Inclinado para cima para você ler sem baixar muito a cabeça)
+                */}
+                <group position={[0, -1, -1.5]} rotation={[-0.6, 0, 0]}>
+                    <Root pixelSize={0.002}>
+                        <TeleprompterView 
+                            timer={helpers.formatTime(state.timeLeft)}
+                            isPaused={state.isPaused}
+                            slideNumber={state.currentSlideIndex + 1}
+                            totalSlides={state.slides.length}
+                            onTogglePause={actions.togglePause}
+                            onNext={actions.nextSlide}
+                            onPrev={actions.prevSlide}
+                        />
+                    </Root>
+                </group>
+            </>
+          )}
 
-              {mode === 'code' && (
-                <Container 
-                  flexDirection="column" 
-                  alignItems="center" 
-                  backgroundColor="#000000"
-                  // @ts-ignore
-                  backgroundOpacity={0.9}
-                  borderRadius={32}
-                  padding={48}
-                  width={500}
-                >
-                  <Text fontSize={32} color="#ffffff" marginBottom={24}>Enter Session Code</Text>
-                  
-                  <Container 
-                    width="100%" 
-                    height={60} 
-                    backgroundColor="#222" 
-                    borderRadius={8} 
-                    marginBottom={32}
-                    alignItems="center"
-                    justifyContent="center"
-                    borderWidth={2}
-                    borderColor="#3b82f6"
-                  >
-                    <Text fontSize={32} color="white" letterSpacing={4}>{code}</Text>
-                  </Container>
-
-                  <Container flexDirection="row" flexWrap="wrap" justifyContent="center" gap={10} width="100%">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                      <Container
-                        key={num}
-                        width={80}
-                        height={80}
-                        backgroundColor="#333"
-                        borderRadius={40}
-                        alignItems="center"
-                        justifyContent="center"
-                        hover={{ backgroundColor: "#444" }}
-                        cursor="pointer"
-                        onClick={() => handleDigit(num.toString())}
-                      >
-                        <Text fontSize={28} color="white">{num}</Text>
-                      </Container>
-                    ))}
-                    <Container
-                        width={80}
-                        height={80}
-                        backgroundColor="#333"
-                        borderRadius={40}
-                        alignItems="center"
-                        justifyContent="center"
-                        hover={{ backgroundColor: "#444" }}
-                        cursor="pointer"
-                        onClick={handleBackspace}
-                      >
-                        <Text fontSize={20} color="#ff4444">DEL</Text>
-                    </Container>
-                    <Container
-                        width={80}
-                        height={80}
-                        backgroundColor="#333"
-                        borderRadius={40}
-                        alignItems="center"
-                        justifyContent="center"
-                        hover={{ backgroundColor: "#444" }}
-                        cursor="pointer"
-                        onClick={() => handleDigit('0')}
-                      >
-                        <Text fontSize={28} color="white">0</Text>
-                    </Container>
-                    <Container
-                        width={80}
-                        height={80}
-                        backgroundColor="#3b82f6"
-                        borderRadius={40}
-                        alignItems="center"
-                        justifyContent="center"
-                        hover={{ backgroundColor: "#2563eb" }}
-                        cursor="pointer"
-                        onClick={handleSubmit}
-                      >
-                        <Text fontSize={20} color="white">OK</Text>
-                    </Container>
-                  </Container>
-                  
-                  <Container 
-                    marginTop={32} 
-                    cursor="pointer" 
-                    onClick={() => setMode('intro')}
-                  >
-                    <Text color="#999" fontSize={16}>Cancel</Text>
-                  </Container>
-                </Container>
-              )}
-            </Root>
-          </group>
-
-          <group position={[0, -1, 0]}>
-            <XROrigin position-z={2.5} />
+          {/* Origem do Usuário */}
+          <group position={[0, -1.6, 0]}> 
+            <XROrigin />
           </group>
 
           <IfInSessionMode deny={['immersive-ar', 'immersive-vr']}>

@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "3000:443" # Mapeia a porta 3000 do host para a 80 do Caddy
+    restart: always
+    volumes:
+      # Opcional: Persistir dados ou configs do Caddy se necessário
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -9,7 +9,8 @@ const nextConfig = {
   ],
   // Disable Strict Mode to prevent double invocation of effects/render in dev,
   // which can cause "Multiple instances of Three.js" warnings and context loss
-  reactStrictMode: false, 
+  reactStrictMode: false,
+  output: 'export', 
 };
 
 export default nextConfig;

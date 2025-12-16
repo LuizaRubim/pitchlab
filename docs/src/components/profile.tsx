@@ -2,7 +2,13 @@ import React, { useState } from "react";
 
 import styles from "../css/profile.module.css";
 
-export const Membro = ({ nome, imagem, linkedin }) => {
+interface MembroProps {
+  nome: string;
+  imagem: string;
+  linkedin: string;
+}
+
+export const Membro = ({ nome, imagem, linkedin }: MembroProps) => {
   const [hovered, setHovered] = useState(false);
 
   const redirecionarParaSite = () => {

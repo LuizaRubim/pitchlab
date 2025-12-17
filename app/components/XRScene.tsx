@@ -14,6 +14,7 @@ import { VRControlListener } from './presentation/VrControl'
 
 const store = createXRStore({
 })
+
 export function XRScene() {
   const { state, actions, helpers } = usePresentation()  
 
@@ -45,7 +46,7 @@ export function XRScene() {
           <directionalLight position={[10, 10, 5]} intensity={1} />
 
           <VRControlListener 
-            isEnabled={state.mode === 'presentation'} 
+            isEnabled={state.mode === 'stage'} 
             onNext={actions.nextSlide}
             onPrev={actions.prevSlide}
           />
@@ -88,7 +89,7 @@ export function XRScene() {
 
           {/* --- MODO APRESENTAÇÃO --- 
           */}
-          {state.mode === 'presentation' && (
+          {state.mode === 'stage' && (
             <>
                 {/* 1. TELÃO (ATRÁS DE VOCÊ)
                    Posição: Z = 4 (Fica no fundo, perto do palco)

@@ -1,4 +1,6 @@
 import { Container, Text } from '@react-three/uikit'
+import { Button } from '@react-three/uikit-default'
+import { usePresentation } from './presentation/usePresentation'
 
 interface KeypadProps {
   code: string
@@ -8,6 +10,8 @@ interface KeypadProps {
 }
 
 export function KeypadView({ code, onDigit, onDelete, onSubmit }: KeypadProps) {
+
+  const { state, actions } = usePresentation();
   return (
     <Container 
       flexDirection="column" alignItems="center" backgroundColor="rgba(0,0,0,0.9)"
@@ -27,9 +31,14 @@ export function KeypadView({ code, onDigit, onDelete, onSubmit }: KeypadProps) {
         <Container width={80} height={80} backgroundColor="#333" borderRadius={40} alignItems="center" justifyContent="center" hover={{ backgroundColor: "#444" }} cursor="pointer" onClick={onDelete}>
             <Text fontSize={20} color="#ff4444">DEL</Text>
         </Container>
-        <Container width={80} height={80} backgroundColor="#3b82f6" borderRadius={40} alignItems="center" justifyContent="center" hover={{ backgroundColor: "#2563eb" }} cursor="pointer" onClick={onSubmit}>
-            <Text fontSize={20} color="white">OK</Text>
-        </Container>
+        <Button width={80} height={80} backgroundColor="#3b82f6" borderRadius={40} alignItems="center" justifyContent="center" hover={{ backgroundColor: "#2563eb" }} cursor="pointer" 
+          onClick={async () => {
+            await actions.fetchPitchByCode();
+          }}
+          disabled={state.isLoading}
+        >
+          {state.isLoading ? "Carregando..." : "Entrar"}
+        </Button>
       </Container>
     </Container>
   )

@@ -23,7 +23,7 @@ export function usePresentation() {
   const [difficulty, setDifficulty] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [pptfile, setPptfile] = useState('')
-  
+
   // Slides
   const [slides, setSlides] = useState<string[]>([])
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
@@ -34,8 +34,8 @@ export function usePresentation() {
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
 
-    
-    const handleDigit = (digit: string) => {
+
+  const handleDigit = (digit: string) => {
     if (code.length < 5) setCode((prev) => prev + digit)
   }
 
@@ -43,7 +43,7 @@ export function usePresentation() {
     setCode((prev) => prev.slice(0, -1))
   }
 
-  const fetchPitchByCode = async (code:string) => {
+  const fetchPitchByCode = async (code: string) => {
 
     setCode(code);
     setIsLoading(true);
@@ -71,27 +71,27 @@ export function usePresentation() {
       setTimeLeft(data.timer);
       setPptfile(data.pptFile || "");
 
-    
+
       // 3. Processa o PDF (URL -> File -> Imagens)
       if (data.pptFile) {
         // Baixa o PDF da URL retornada pela API
         const pdfResponse = await fetch(data.pptFile);
         const pdfBlob = await pdfResponse.blob();
-        
+
         // Cria um objeto File para o conversor
         const pdfFile = new File([pdfBlob], "presentation.pdf", { type: "application/pdf" });
-        
+
         // Converte para imagens
         const images = await convertPdfToImages(pdfFile);
         setSlides(images);
       }
 
       alert(`Pitch carregado: Dificuldade ${data.difficulty}`);
-      
-      setMode('stage'); 
-      console.log("Pitch data:", data);
-      console.log("Mudou para stage");
-      
+
+      setMode('stage');
+      setIsTimerRunning(true);
+      setIsLoading(false);
+
       return data;
 
     } catch (error: any) {
@@ -110,7 +110,7 @@ export function usePresentation() {
         setTimeLeft((prev) => prev - 1)
       }, 1000)
     } else if (timeLeft === 0) {
-      setIsTimerRunning(false)  
+      setIsTimerRunning(false)
     }
     return () => clearInterval(interval)
   }, [isTimerRunning, isPaused, timeLeft])
@@ -169,13 +169,13 @@ export function usePresentation() {
   }, [mode, nextSlide, prevSlide])
 
   return {
-    state: { mode, code, timeLeft, isPaused, currentSlideIndex, isTimerRunning, slides, totalTime, isLoading},
-    actions: { 
-        setMode, handleFileUpload, togglePause, 
-        nextSlide, prevSlide, 
-        startPresentation: () => { setMode('stage'); setIsTimerRunning(true); },
-        setTotalTime: (t: number) => { setTotalTime(t); setTimeLeft(t); },
-        handleDigit, handleBackspace, fetchPitchByCode
+    state: { mode, code, timeLeft, isPaused, currentSlideIndex, isTimerRunning, slides, totalTime, isLoading },
+    actions: {
+      setMode, handleFileUpload, togglePause,
+      nextSlide, prevSlide,
+      startPresentation: () => { setMode('stage'); setIsTimerRunning(true); },
+      setTotalTime: (t: number) => { setTotalTime(t); setTimeLeft(t); },
+      handleDigit, handleBackspace, fetchPitchByCode
     },
     helpers: { formatTime, currentSlideUrl: slides[currentSlideIndex] || null }
   }

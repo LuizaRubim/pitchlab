@@ -8,62 +8,52 @@ interface VRControlProps {
 }
 
 export function VRControlListener({ onNext, onPrev, isEnabled }: VRControlProps) {
-  // Cooldown para não passar 10 slides de uma vez
-  const cooldownRef = useRef(0) 
-  
-  // Estado para travar o movimento até o stick voltar ao centro (evita disparos contínuos)
-  const isStickActiveRef = useRef(false)
+  // Cooldown para não passar vários slides num único clique
+  const cooldownRef = useRef(0)
+  const isButtonActiveRef = useRef(false)
 
   useFrame((state, delta) => {
     if (!isEnabled) return
 
-    // Reduz o cooldown se houver
+    // Reduz o cooldown
     if (cooldownRef.current > 0) {
       cooldownRef.current -= delta
       return
     }
 
-    // Pega todos os gamepads
     const gamepads = navigator.getGamepads()
 
     for (const gamepad of gamepads) {
-      // 1. Ignora slots vazios ou gamepads desconectados
-      if (!gamepad) continue
+        if (!gamepad) continue
 
-      // 2. Filtra apenas controles XR (ignora volantes, controles bluetooth genéricos, etc)
-      // A maioria dos controles VR tem mapping 'xr-standard'
-      const isXRController = gamepad.mapping === 'xr-standard'
-      if (!isXRController) continue
+      // Mapeamento Padrão Oculus/Meta Quest:
+      // buttons[4] ou buttons[0] costuma ser o 'A' (Direita) ou 'X' (Esquerda)
+      // O Gatilho (Trigger) é buttons[0] em alguns profiles, mas 'A' costuma ser o 4 ou 5.
+      
+      // Vamos verificar se algum botão de ação principal está pressionado.
+      // Geralmente Botão A/X é o index 4 no mapeamento 'xr-standard'
+      const isActionPressed = gamepad.buttons[4]?.pressed || gamepad.buttons[5]?.pressed
 
-      // 3. Identifica o Eixo X (Horizontal)
-      // No padrão XR Standard:
-      // axes[2] = Joystick X (Horizontal)
-      // axes[3] = Joystick Y (Vertical)
-      // (Alguns controles antigos usam axes[0], vamos checar ambos por segurança)
-      const xAxis = gamepad.axes[2] || gamepad.axes[0] || 0
-
-      // Zona morta (Deadzone) para evitar drift
-      const threshold = 0.4
-
-      if (Math.abs(xAxis) > threshold) {
-        // Se o stick foi empurrado e não estava ativo antes
-        if (!isStickActiveRef.current) {
+      if (isActionPressed) {
+        if (!isButtonActiveRef.current) {
           
-          console.log(`🎮 Joystick Detectado: ${xAxis > 0 ? 'Direita' : 'Esquerda'} (Valor: ${xAxis})`)
-
-          if (xAxis > threshold) {
-             onNext() // Direita
-          } else {
-             onPrev() // Esquerda
+          // Lógica: Mão Direita (A) -> Próximo | Mão Esquerda (X) -> Anterior
+          if ((gamepad as any).handedness === 'right') {
+            console.log("👉 Botão A (Direita) - Próximo Slide")
+            onNext()
+          } else if ((gamepad as any).handedness === 'left') {
+            console.log("👈 Botão X (Esquerda) - Slide Anterior")
+            onPrev()
           }
 
-          // Ativa a trava e o cooldown
-          isStickActiveRef.current = true
-          cooldownRef.current = 0.4 // 400ms de pausa
+          // Trava e cooldown
+          isButtonActiveRef.current = true
+          cooldownRef.current = 0.5 // 500ms de espera
         }
       } else {
-        // Se o valor baixou do threshold, liberamos para o próximo movimento
-        isStickActiveRef.current = false
+        // Destrava apenas se NENHUM gamepad estiver apertando o botão (simplificado)
+        // (Idealmente checaria por gamepad, mas assim funciona bem)
+        isButtonActiveRef.current = false
       }
     }
   })

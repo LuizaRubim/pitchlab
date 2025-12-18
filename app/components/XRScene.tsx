@@ -12,6 +12,7 @@ import { TeleprompterView } from './SlideView'
 import { IntroView } from './IntroView'
 import { KeypadView } from './KeypadView'
 import { VRControlListener } from './presentation/VrControl'
+import { LoadingView } from './loadingView'
 
 
 const store = createXRStore({
@@ -22,46 +23,6 @@ export function XRScene() {
 
   return (
     <>
-      {/* --- Loading Pop-up --- */}
-      {state.isLoading && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-        }}>
-          <div style={{
-            background: 'rgba(30, 30, 30, 0.95)',
-            padding: '40px',
-            borderRadius: '12px',
-            textAlign: 'center',
-            color: 'white',
-            fontFamily: 'sans-serif',
-          }}>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              border: '4px solid #3b82f6',
-              borderTop: '4px solid transparent',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '0 auto 20px',
-            }} />
-            <p style={{ margin: '0', fontSize: '1.1em' }}>Carregando...</p>
-            <style>{`
-              @keyframes spin {
-                to { transform: rotate(360deg); }
-              }
-            `}</style>
-          </div>
-        </div>
-      )}
 
       {/* --- UI HTML 2D (Controles Externos) --- */}
       <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '10px', color: 'white', fontFamily: 'sans-serif' }}>
@@ -111,10 +72,16 @@ export function XRScene() {
               <Gltf src="/models/elevator.glb" position={[0, -1.5, 2.7]} scale={1} rotation={[0, Math.PI/2, 0]}/>
             )*/}
           </Suspense>
+          
+          {state.isLoading && (
+            <group position={[0, 1.6, -1]}>
+                    <LoadingView />
+            </group>
+          )}
 
           {/* --- UI DA FRENTE (Menus Iniciais) ---
           */}
-          {(state.mode === 'intro' || state.mode === 'code') && (
+          {!state.isLoading && (state.mode === 'intro' || state.mode === 'code') && (
              <group position={[0, -1, -1.5]}>
                 <Root pixelSize={0.002}>
                    {state.mode === 'intro' && <IntroView onStart={() => actions.setMode('code')} />}
@@ -125,7 +92,6 @@ export function XRScene() {
                        onDelete={actions.handleBackspace}
                        onSubmit={ async (code) => {
                          await actions.fetchPitchByCode(code);
-                         actions.startPresentation();
                        }}
                      />
                    )}
@@ -155,6 +121,8 @@ export function XRScene() {
                 <group position={[0, -1, -1.5]} rotation={[0, 0, 0]} >
                     <Root pixelSize={0.002}>
                         <TeleprompterView 
+                            totalTime={state.totalTime}
+                            timeLeft={state.timeLeft}
                             timer={helpers.formatTime(state.timeLeft)}
                             isPaused={state.isPaused}
                             slideNumber={state.currentSlideIndex + 1}

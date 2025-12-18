@@ -22,35 +22,35 @@ export function usePresentation() {
   const [bulletPoints, setBulletPoints] = useState<string[]>([])
   const [difficulty, setDifficulty] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [pptfile, setPptfile] = useState('')
   
   // Slides
   const [slides, setSlides] = useState<string[]>([])
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
 
   // Timer Regressivo
-  const [totalTime, setTotalTime] = useState(0) // Ex: 5 minutos (300s) padrão
+  const [totalTime, setTotalTime] = useState(0)
   const [timeLeft, setTimeLeft] = useState(300)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
 
     
     const handleDigit = (digit: string) => {
-    if (code.length < 4) setCode((prev) => prev + digit)
+    if (code.length < 5) setCode((prev) => prev + digit)
   }
 
   const handleBackspace = () => {
     setCode((prev) => prev.slice(0, -1))
   }
 
-  const fetchPitchByCode = async () => {
-    if (code.length < 4) return; // Só busca se tiver 4 dígitos
-    
+  const fetchPitchByCode = async (code:string) => {
+
+    setCode(code);
     setIsLoading(true);
 
     try {
-      // 1. Busca os dados do Pitch baseados no código
-      // Assumindo que sua API aceita ?code=XXXX
-      const response = await fetch(`${apiBaseUrl}/pitches?code=${code}`, {
+
+      const response = await fetch(`${apiBaseUrl}/pitches/${code}`, {
         method: "GET",
       });
 
@@ -69,18 +69,9 @@ export function usePresentation() {
       setDifficulty(data.difficulty);
       setTotalTime(data.timer);
       setTimeLeft(data.timer);
-      
-      // Mapeia o cenário da API para o AppMode (garantindo tipagem)
-      // Se o backend enviar "Auditório", mapeamos para 'stage', etc.
-      // Aqui estou assumindo que o backend já manda 'stage' ou similar
-      const scenarioMap: Record<string, AppMode> = {
-         'stage': 'stage',
-         'auditorium': 'stage', // exemplo
-         // adicione outros mapeamentos se necessário
-      };
-      // Por enquanto não mudamos o modo ainda, só carregamos os dados
-      // O modo muda quando chama startPresentation ou quando termina de carregar
+      setPptfile(data.pptFile || "");
 
+    
       // 3. Processa o PDF (URL -> File -> Imagens)
       if (data.pptFile) {
         // Baixa o PDF da URL retornada pela API
@@ -97,8 +88,9 @@ export function usePresentation() {
 
       alert(`Pitch carregado: Dificuldade ${data.difficulty}`);
       
-      // Opcional: Já iniciar a apresentação ou esperar o usuário clicar em "Start"
-      // setMode('stage'); 
+      setMode('stage'); 
+      console.log("Pitch data:", data);
+      console.log("Mudou para stage");
       
       return data;
 

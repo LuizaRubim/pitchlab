@@ -23,7 +23,7 @@ class SupabaseService:
 
     def generate_code(self) -> str:
         """Generate a unique-looking alphanumeric code."""
-        alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        alphabet = "123456789"
         return "".join(secrets.choice(alphabet) for _ in range(self._settings.code_length))
 
     def upload_pdf(self, *, code: str, filename: str, data: bytes) -> str:

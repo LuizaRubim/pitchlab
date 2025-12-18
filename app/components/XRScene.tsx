@@ -1,4 +1,5 @@
 'use client'
+
 import { Canvas } from '@react-three/fiber'
 import { XR, createXRStore, XROrigin, IfInSessionMode } from '@react-three/xr'
 import { OrbitControls, Gltf, Environment } from '@react-three/drei'
@@ -12,6 +13,7 @@ import { IntroView } from './IntroView'
 import { KeypadView } from './KeypadView'
 import { VRControlListener } from './presentation/VrControl'
 
+
 const store = createXRStore({
 })
 
@@ -20,6 +22,47 @@ export function XRScene() {
 
   return (
     <>
+      {/* --- Loading Pop-up --- */}
+      {state.isLoading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+        }}>
+          <div style={{
+            background: 'rgba(30, 30, 30, 0.95)',
+            padding: '40px',
+            borderRadius: '12px',
+            textAlign: 'center',
+            color: 'white',
+            fontFamily: 'sans-serif',
+          }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              border: '4px solid #3b82f6',
+              borderTop: '4px solid transparent',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 20px',
+            }} />
+            <p style={{ margin: '0', fontSize: '1.1em' }}>Carregando...</p>
+            <style>{`
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
+          </div>
+        </div>
+      )}
+
       {/* --- UI HTML 2D (Controles Externos) --- */}
       <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '10px', color: 'white', fontFamily: 'sans-serif' }}>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -80,7 +123,10 @@ export function XRScene() {
                        code={state.code}
                        onDigit={actions.handleDigit}
                        onDelete={actions.handleBackspace}
-                       onSubmit={actions.startPresentation}
+                       onSubmit={ async (code) => {
+                         await actions.fetchPitchByCode(code);
+                         actions.startPresentation();
+                       }}
                      />
                    )}
                 </Root>

@@ -32,3 +32,7 @@ pnpm-debug.log*
 
 /inteli-spaces/
 
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class

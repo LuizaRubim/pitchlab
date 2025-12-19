@@ -1,4 +1,4 @@
-export type AppMode = 'intro' | 'code' | 'elevator' | 'presentation'
+export type AppMode = 'intro' | 'code' | 'elevator' | 'stage'
 
 export const MOCK_SLIDES = [
   { id: 1, title: "Introdução ao PitchLab", content: "O futuro das apresentações" },

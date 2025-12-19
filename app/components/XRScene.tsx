@@ -1,5 +1,6 @@
 // src/components/presentation/XRScene.tsx
 'use client'
+
 import { Canvas } from '@react-three/fiber'
 import { XR, createXRStore, XROrigin, IfInSessionMode } from '@react-three/xr'
 import { OrbitControls, Gltf, Environment } from '@react-three/drei'
@@ -12,14 +13,18 @@ import { TeleprompterView } from './SlideView'
 import { IntroView } from './IntroView'
 import { KeypadView } from './KeypadView'
 import { VRControlListener } from './presentation/VrControl'
+import { LoadingView } from './loadingView'
 
-const store = createXRStore()
+
+const store = createXRStore({
+})
 
 export function XRScene() {
   const { state, actions, helpers, refs } = usePresentation()  
 
   return (
     <>
+
       {/* --- UI HTML 2D (Controles Externos) --- */}
       <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '10px', color: 'white', fontFamily: 'sans-serif' }}>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -53,6 +58,12 @@ export function XRScene() {
         <XR store={store}>
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
+
+          <VRControlListener 
+            isEnabled={state.mode === 'stage'} 
+            onNext={actions.nextSlide}
+            onPrev={actions.prevSlide}
+          />
           
           <Suspense fallback={null}>
             {/* --- CENÁRIO DE FUNDO (ATRÁS) --- */}
@@ -65,32 +76,36 @@ export function XRScene() {
               />
             )}
           </Suspense>
+          
+          {state.isLoading && (
+            <group position={[0, 1.6, -1]}>
+                    <LoadingView />
+            </group>
+          )}
 
-          <VRControlListener 
-            isEnabled={state.mode === 'presentation'} 
-            onNext={actions.nextSlide}
-            onPrev={actions.prevSlide}
-          />
-
-          {/* --- UI DA FRENTE (Menus Iniciais) --- */}
-          {(state.mode === 'intro' || state.mode === 'code') && (
-             <group position={[0, 1.0, -1]}>
-                <Root pixelSize={0.005}>
+          {/* --- UI DA FRENTE (Menus Iniciais) ---
+          */}
+          {!state.isLoading && (state.mode === 'intro' || state.mode === 'code') && (
+             <group position={[0, -1, -1.5]}>
+                <Root pixelSize={0.002}>
                    {state.mode === 'intro' && <IntroView onStart={() => actions.setMode('code')} />}
                    {state.mode === 'code' && (
                      <KeypadView 
                        code={state.code}
                        onDigit={actions.handleDigit}
                        onDelete={actions.handleBackspace}
-                       onSubmit={actions.startPresentation}
+                       onSubmit={ async (code) => {
+                         await actions.fetchPitchByCode(code);
+                       }}
                      />
                    )}
                 </Root>
              </group>
           )}
 
-          {/* --- MODO APRESENTAÇÃO --- */}
-          {state.mode === 'presentation' && (
+          {/* --- MODO APRESENTAÇÃO --- 
+          */}
+          {state.mode === 'stage' && (
             <>
                 {/* 1. TELÃO (ATRÁS DE VOCÊ) */}
                 <group position={[2, 2, 14]} rotation={[0, Math.PI, 0]}> 
@@ -103,6 +118,8 @@ export function XRScene() {
                 <group position={[0, -1, -1.5]} rotation={[-0.6, 0, 0]}>
                     <Root pixelSize={0.002}>
                         <TeleprompterView 
+                            totalTime={state.totalTime}
+                            timeLeft={state.timeLeft}
                             timer={helpers.formatTime(state.timeLeft)}
                             isPaused={state.isPaused}
                             slideNumber={state.currentSlideIndex + 1}
@@ -110,6 +127,7 @@ export function XRScene() {
                             onTogglePause={actions.togglePause}
                             onNext={actions.nextSlide}
                             onPrev={actions.prevSlide}
+                            currentSlideUrl={state.slides[state.currentSlideIndex]}
                         />
                     </Root>
                 </group>

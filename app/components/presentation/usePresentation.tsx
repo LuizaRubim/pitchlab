@@ -1,13 +1,29 @@
-// src/components/presentation/usePresentation.ts
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppMode } from './types'
 import { convertPdfToImages } from '../../../src/utils/pdf'
 
+interface PitchResponse {
+  bulletPoints: string[];
+  difficulty: string;
+  pptFile: string;
+  scenario: string;
+  timer: number;
+  code: string;
+}
+
 export function usePresentation() {
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
   const [mode, setMode] = useState<AppMode>('intro')
   const [code, setCode] = useState('')
- 
+
+  const [bulletPoints, setBulletPoints] = useState<string[]>([])
+  const [difficulty, setDifficulty] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [pptfile, setPptfile] = useState('')
+
   // Slides
   const [slides, setSlides] = useState<string[]>([])
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
@@ -16,13 +32,14 @@ export function usePresentation() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Timer Regressivo
-  const [totalTime, setTotalTime] = useState(30)
-  const [timeLeft, setTimeLeft] = useState(30)
+  const [totalTime, setTotalTime] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(300)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
 
+
   const handleDigit = (digit: string) => {
-    if (code.length < 4) setCode((prev) => prev + digit)
+    if (code.length < 5) setCode((prev) => prev + digit)
   }
 
   const handleBackspace = () => {
@@ -43,6 +60,66 @@ export function usePresentation() {
       fileInputRef.current.value = ''
     }
   }, [totalTime])
+  
+  
+  const fetchPitchByCode = async (code: string) => {
+
+    setCode(code);
+    setIsLoading(true);
+
+    try {
+
+      const response = await fetch(`${apiBaseUrl}/pitches/${code}`, {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("Código não encontrado ou erro no servidor.");
+      }
+
+      // Se a API retorna um array, pegamos o primeiro. Se retorna objeto, usamos direto.
+      const rawData = await response.json();
+      const data: PitchResponse = Array.isArray(rawData) ? rawData[0] : rawData;
+
+      if (!data) throw new Error("Pitch não encontrado.");
+
+      // 2. Atualiza estados simples
+      setBulletPoints(data.bulletPoints || []);
+      setDifficulty(data.difficulty);
+      setTotalTime(data.timer);
+      setTimeLeft(data.timer);
+      setPptfile(data.pptFile || "");
+
+
+      // 3. Processa o PDF (URL -> File -> Imagens)
+      if (data.pptFile) {
+        // Baixa o PDF da URL retornada pela API
+        const pdfResponse = await fetch(data.pptFile);
+        const pdfBlob = await pdfResponse.blob();
+
+        // Cria um objeto File para o conversor
+        const pdfFile = new File([pdfBlob], "presentation.pdf", { type: "application/pdf" });
+
+        // Converte para imagens
+        const images = await convertPdfToImages(pdfFile);
+        setSlides(images);
+      }
+
+      alert(`Pitch carregado: Dificuldade ${data.difficulty}`);
+
+      setMode('stage');
+      setIsTimerRunning(true);
+      setIsLoading(false);
+
+      return data;
+
+    } catch (error: any) {
+      console.error("Erro ao buscar pitch:", error);
+      alert(error.message || "Erro ao carregar pitch.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   // Lógica do Timer (Countdown) com Efeito Sonoro
   useEffect(() => {
@@ -116,7 +193,8 @@ export function usePresentation() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (mode !== 'presentation') return
+      // Só queremos navegar se estivermos no modo apresentação
+      if (mode !== 'stage') return
 
       if (e.key === 'ArrowRight') nextSlide()
       if (e.key === 'ArrowLeft') prevSlide()
@@ -127,13 +205,13 @@ export function usePresentation() {
   }, [mode, nextSlide, prevSlide])
 
   return {
-    state: { mode, code, timeLeft, isPaused, currentSlideIndex, isTimerRunning, slides, totalTime },
+    state: { mode, code, timeLeft, isPaused, currentSlideIndex, isTimerRunning, slides, totalTime, isLoading },
     actions: {
-        setMode, handleFileUpload, togglePause,
-        nextSlide, prevSlide,
-        startPresentation: () => { setMode('presentation'); setIsTimerRunning(true); },
-        setTotalTime: (t: number) => { setTotalTime(t); setTimeLeft(t); },
-        handleDigit, handleBackspace
+      setMode, handleFileUpload, togglePause,
+      nextSlide, prevSlide,
+      startPresentation: () => { setMode('stage'); setIsTimerRunning(true); },
+      setTotalTime: (t: number) => { setTotalTime(t); setTimeLeft(t); },
+      handleDigit, handleBackspace, fetchPitchByCode
     },
     refs: { fileInputRef },
     helpers: { formatTime, currentSlideUrl: slides[currentSlideIndex] || null }

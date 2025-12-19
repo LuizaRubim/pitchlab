@@ -4,7 +4,7 @@ import { useState, type DragEvent } from "react";
 import { Upload } from "lucide-react";
 
 export default function Home() {
-  const [scenario, setScenario] = useState<"elevator" | "auditorium" | "">("");
+  const [scenario, setScenario] = useState<"elevator" | "stage" | "">("");
   const [hasTimer, setHasTimer] = useState(false);
   const [bulletPoints, setBulletPoints] = useState<string[]>([""]);
   const [pptFile, setPptFile] = useState<File | null>(null);
@@ -76,7 +76,7 @@ export default function Home() {
       return;
     }
 
-    if (scenario === "auditorium" && !pptFile) {
+    if (scenario === "stage" && !pptFile) {
       setErrorMessage("Envie um PDF da apresentação para o cenário de auditório.");
       return;
     }
@@ -89,7 +89,7 @@ export default function Home() {
 
     const payload = {
       timer: timerValue ?? 0,
-      pptFile: scenario === "auditorium" ? pptFile?.name ?? null : null,
+      pptFile: scenario === "stage" ? pptFile?.name ?? null : null,
       scenario,
       difficulty,
       bulletPoints: scenario === "elevator" ? sanitizedBullets : [],
@@ -101,7 +101,7 @@ export default function Home() {
 
       const formData = new FormData();
       formData.append("payload", JSON.stringify(payload));
-      if (scenario === "auditorium" && pptFile) {
+      if (scenario === "stage" && pptFile) {
         formData.append("pdf", pptFile);
       }
 
@@ -177,7 +177,7 @@ export default function Home() {
             >
               <option className="bg-black" value="">Selecione um cenário</option>
               <option className="bg-black" value="elevator">Elevador</option>
-              <option className="bg-black" value="auditorium">Auditório</option>
+              <option className="bg-black" value="stage">Auditório</option>
             </select>
           </div>
 
@@ -227,7 +227,7 @@ export default function Home() {
             </div>
           )}
 
-          {scenario === "auditorium" && (
+          {scenario === "stage" && (
             <div className="mb-6 animate-fadeIn">
               <h2 className="font-semibold mb-3">Upload da apresentação em PDF</h2>
               <label

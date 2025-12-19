@@ -70,7 +70,7 @@ export function XRScene() {
             {state.mode !== 'elevator' && (
               <Gltf 
                   src="/models/stage.glb" 
-                  position={[4, -2, 5]} 
+                  position={[0.3, -2, 5]} 
                   scale={1} 
                   rotation={[0, Math.PI, 0]}
               />
@@ -86,8 +86,8 @@ export function XRScene() {
           {/* --- UI DA FRENTE (Menus Iniciais) ---
           */}
           {!state.isLoading && (state.mode === 'intro' || state.mode === 'code') && (
-             <group position={[0, -1, -1.5]}>
-                <Root pixelSize={0.002}>
+             <group position={[0, 1.5, -1.0]}>
+                <Root pixelSize={0.005}>
                    {state.mode === 'intro' && <IntroView onStart={() => actions.setMode('code')} />}
                    {state.mode === 'code' && (
                      <KeypadView 

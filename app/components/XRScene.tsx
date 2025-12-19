@@ -1,3 +1,4 @@
+// src/components/presentation/XRScene.tsx
 'use client'
 
 import { Canvas } from '@react-three/fiber'
@@ -19,7 +20,7 @@ const store = createXRStore({
 })
 
 export function XRScene() {
-  const { state, actions, helpers } = usePresentation()  
+  const { state, actions, helpers, refs } = usePresentation()  
 
   return (
     <>
@@ -33,7 +34,16 @@ export function XRScene() {
         
         <div style={{ background: 'rgba(0,0,0,0.8)', padding: '15px', borderRadius: '8px', width: '250px' }}>
             <p style={{margin: '0 0 5px 0', fontSize: '0.9em', color: '#ccc'}}>Configuração:</p>
-            <input type="file" accept="application/pdf" onChange={actions.handleFileUpload} style={{ width: '100%', marginBottom: '10px' }} />
+            
+            {/* 2. ADICIONEI O ref={refs.fileInputRef} AQUI NO INPUT */}
+            <input 
+                ref={refs.fileInputRef} 
+                type="file" 
+                accept="application/pdf" 
+                onChange={actions.handleFileUpload} 
+                style={{ width: '100%', marginBottom: '10px' }} 
+            />
+            
             <button 
                 onClick={actions.startPresentation}
                 disabled={state.slides.length === 0}
@@ -56,8 +66,7 @@ export function XRScene() {
           />
           
           <Suspense fallback={null}>
-            {/* --- CENÁRIO DE FUNDO (ATRÁS) ---
-            */}
+            {/* --- CENÁRIO DE FUNDO (ATRÁS) --- */}
             {state.mode !== 'elevator' && (
               <Gltf 
                   src="/models/stage.glb" 
@@ -66,11 +75,6 @@ export function XRScene() {
                   rotation={[0, Math.PI, 0]}
               />
             )}
-            
-            {/* Elevador (Se necessário) */}
-            {/*state.mode === 'elevator' && (
-              <Gltf src="/models/elevator.glb" position={[0, -1.5, 2.7]} scale={1} rotation={[0, Math.PI/2, 0]}/>
-            )*/}
           </Suspense>
           
           {state.isLoading && (
@@ -103,22 +107,15 @@ export function XRScene() {
           */}
           {state.mode === 'stage' && (
             <>
-                {/* 1. TELÃO (ATRÁS DE VOCÊ)
-                   Posição: Z = 4 (Fica no fundo, perto do palco)
-                   Rotação Y = Math.PI (180 graus) para "olhar" para o Z Negativo (onde você está)
-                   Assim, se você virar para trás, verá o slide.
-                */}
+                {/* 1. TELÃO (ATRÁS DE VOCÊ) */}
                 <group position={[2, 2, 14]} rotation={[0, Math.PI, 0]}> 
                     <Root pixelSize={0.008} sizeX={16} sizeY={9}>
                         <ProjectionScreen src={helpers.currentSlideUrl} />
                     </Root>
                 </group>
 
-                {/* 2. MONITOR DE RETORNO / TELEPROMPTER (NA SUA FRENTE)
-                   Posição: Z = -1.5 (Chão, na sua frente)
-                   Rotação X = -0.6 (Inclinado para cima para você ler sem baixar muito a cabeça)
-                */}
-                <group position={[0, -1, -1.5]} rotation={[0, 0, 0]} >
+                {/* 2. MONITOR DE RETORNO / TELEPROMPTER (NA SUA FRENTE) */}
+                <group position={[0, -1, -1.5]} rotation={[-0.6, 0, 0]}>
                     <Root pixelSize={0.002}>
                         <TeleprompterView 
                             totalTime={state.totalTime}
